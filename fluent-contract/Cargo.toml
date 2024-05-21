@@ -1,0 +1,30 @@
+[package]
+edition = "2021"
+name = "fluent-chess"
+version = "0.1.0"
+
+[dependencies]
+alloy-sol-types = {version = "0.7.4", default-features = false}
+# fluentbase-codec = {git = "https://github.com/fluentlabs-xyz/fluentbase", default-features = false}
+fluentbase-sdk = {git = "https://github.com/fluentlabs-xyz/fluentbase", default-features = false}
+# fluentbase-types = {git = "https://github.com/fluentlabs-xyz/fluentbase", default-features = false}
+shakmaty = {git = "https://github.com/dmitry123/shakmaty", default-features = false, features = ["alloc"], optional = true}
+
+[lib]
+crate-type = ["cdylib", "staticlib"]
+
+[profile.release]
+lto = true
+opt-level = 'z'
+panic = "abort"
+strip = true
+
+[features]
+chess = [
+  "dep:shakmaty",
+]
+default = []
+greeting = []
+std = [
+  "fluentbase-sdk/std",
+]
