@@ -7,6 +7,7 @@ use shakmaty::{fen::Fen, san::San, CastlingMode, Chess, FromSetup, Position, Set
 // Define a Solidity function that checks if a given chess move results in a checkmate
 sol! {
     function isCheckmate(string board, string mv) external view returns (bool);
+    function isBoardValid(string board) external view returns (bool);
 }
 
 // Define a struct to hold the execution context
@@ -50,6 +51,23 @@ impl<'a> CHESS<'a> {
         // Check if the new position is a checkmate
         new_pos.is_checkmate()
     }
+
+    fn is_board_valid(board: &str) -> bool {
+        // Parse the FEN string to a Fen object
+        let fen = match Fen::from_ascii(board.as_bytes()) {
+            Ok(fen) => fen,
+            Err(_) => return false,
+        };
+
+        // Convert the Fen object to a Setup object
+        let setup = Setup::from(fen);
+
+        // Convert the Setup object to a Chess object
+        let pos = match Chess::from_setup(setup, CastlingMode::Standard) {
+            Ok(_) => return true,
+            Err(_) => return false,
+        };
+    }
 }
 
 // Function to deploy the contract
@@ -65,19 +83,37 @@ pub fn main() {
     let mut selector: [u8; 4] = [0; 4];
     selector.copy_from_slice(&input[0..4]);
 
-    // Decode the contract input
-    let (board, mv): (String, String) = match <isCheckmateCall as SolCall>::abi_decode(&input, true)
-    {
-        Ok(decoded) => (decoded.board, decoded.mv),
-        Err(e) => {
-            panic!("Failed to decode input {:?}", e);
-        }
-    };
-    // Execute the appropriate function based on the selector
+    // Check if the selector is for the isCheckmate function
     let output = match selector {
-        isCheckmateCall::SELECTOR => CHESS::<'_>::is_checkmate(&board, &mv).abi_encode(),
+        isCheckmateCall::SELECTOR => {
+            let (board, mv): (String, String) =
+                match <isCheckmateCall as SolCall>::abi_decode(&input, true) {
+                    Ok(decoded) => (decoded.board, decoded.mv),
+                    Err(e) => {
+                        panic!("Failed to decode input {:?}", e);
+                    }
+                };
+            CHESS::<'_>::is_checkmate(&board, &mv).abi_encode()
+        }
+        isBoardValidCall::SELECTOR => {
+            let (board): (String) = match <isBoardValidCall as SolCall>::abi_decode(&input, true) {
+                Ok(decoded) => (decoded.board),
+                Err(e) => {
+                    panic!("Failed to decode input {:?}", e);
+                }
+            };
+            CHESS::<'_>::is_board_valid(&board).abi_encode()
+        }
         _ => panic!("unknown method"),
     };
+
+    // Decode the contract input
+
+    // Execute the appropriate function based on the selector
+    // let output = match selector {
+    //     isCheckmateCall::SELECTOR => ,
+    //     _ => panic!("unknown method"),
+    // };
     // Write the output to the system
     LowLevelSDK::sys_write(&output);
 }
