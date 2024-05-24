@@ -90,16 +90,16 @@ pub fn main() {
                 match <isCheckmateCall as SolCall>::abi_decode(&input, true) {
                     Ok(decoded) => (decoded.board, decoded.mv),
                     Err(e) => {
-                        panic!("Failed to decode input {:?}", e);
+                        panic!("Failed to decode input isCheckmateCall {:?}", e);
                     }
                 };
             CHESS::<'_>::is_checkmate(&board, &mv).abi_encode()
         }
         isBoardValidCall::SELECTOR => {
-            let (board): (String) = match <isBoardValidCall as SolCall>::abi_decode(&input, true) {
-                Ok(decoded) => (decoded.board),
+            let board: String = match <isBoardValidCall as SolCall>::abi_decode(&input, true) {
+                Ok(decoded) => decoded.board,
                 Err(e) => {
-                    panic!("Failed to decode input {:?}", e);
+                    panic!("Failed to decode input isBoardValidCall{:?}", e);
                 }
             };
             CHESS::<'_>::is_board_valid(&board).abi_encode()
@@ -107,13 +107,5 @@ pub fn main() {
         _ => panic!("unknown method"),
     };
 
-    // Decode the contract input
-
-    // Execute the appropriate function based on the selector
-    // let output = match selector {
-    //     isCheckmateCall::SELECTOR => ,
-    //     _ => panic!("unknown method"),
-    // };
-    // Write the output to the system
     LowLevelSDK::sys_write(&output);
 }

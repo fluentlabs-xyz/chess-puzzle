@@ -17,10 +17,7 @@ describe("ChessPuzzle", function () {
     const chessStub = await CheckmateValidatorStub.deploy(true, true);
 
     const ChessPuzzle = await hre.ethers.getContractFactory("ChessPuzzle");
-    const puzzle = await ChessPuzzle.deploy(
-      token.getAddress(),
-      chessStub.getAddress()
-    );
+    const puzzle = await ChessPuzzle.deploy(await chessStub.getAddress());
 
     return { token, chessStub, puzzle, owner, otherAccount };
   }
@@ -36,10 +33,10 @@ describe("ChessPuzzle", function () {
 
       const fen =
         "r1bqkbnr/ppp2ppp/2np4/4p2Q/2B1P3/8/PPPP1PPP/RNB1K1NR w KQkq - 0 4";
-      await puzzle.createPuzzle(fen, 500);
+      await puzzle.createPuzzle(fen, 500, token.getAddress());
 
       const move = "Qxf7";
-      await puzzle.connect(otherAccount).solvePuzzle(0, move);
+      await puzzle.connect(otherAccount).solvePuzzle(fen, move);
 
       expect(await token.balanceOf(otherAccount.address)).to.equal(500);
     });
