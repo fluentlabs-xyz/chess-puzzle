@@ -6,7 +6,8 @@ RUSTFLAGS='-C link-arg=-zstack-size=131072 -C target-feature=+bulk-memory -C opt
 WASM_TARGET=./target/wasm32-unknown-unknown/release/checkmate_validator.wasm
 WASM_OUTPUT_DIR=bin
 
-all: build deploy
+all: build deploy-local
+
 build: 
 	@echo "Building the project..."
 	RUSTFLAGS=$(RUSTFLAGS) cargo b --release --target=wasm32-unknown-unknown --no-default-features
@@ -21,6 +22,10 @@ build:
 	@echo "Converting wasm to wat..."
 	wasm2wat ./bin/checkmate_validator.wasm > ./bin/checkmate_validator.wat
 
-deploy: build
-	@echo "Deploying the contract..."
+deploy-local: build
+	@echo "Deploying the contract locally..."
+	cd deployer && node deploy-contract.js --local ../$(WASM_OUTPUT_DIR)/checkmate_validator.wasm
+
+deploy-dev: build
+	@echo "Deploying the contract to development environment..."
 	cd deployer && node deploy-contract.js --dev ../$(WASM_OUTPUT_DIR)/checkmate_validator.wasm

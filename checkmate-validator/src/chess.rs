@@ -2,7 +2,7 @@ use alloc::string::String;
 
 use alloy_sol_types::{sol, SolCall, SolValue};
 use fluentbase_sdk::{ContextReader, ExecutionContext, LowLevelAPI, LowLevelSDK};
-use shakmaty::{CastlingMode, Chess, fen::Fen, FromSetup, Position, san::San, Setup};
+use shakmaty::{fen::Fen, san::San, CastlingMode, Chess, FromSetup, Position, Setup};
 
 // Define a Solidity function that checks if a given chess move results in a checkmate
 sol! {
@@ -41,11 +41,14 @@ impl<'a> CHESS<'a> {
             Err(_) => return false,
         };
 
-        // Try to play the move on the chess board
-        match pos.play(&mv) {
-            Ok(_) => true,
-            Err(_) => false,
-        }
+        // Try to play the move on the chess board and get new position
+        let new_pos = match pos.play(&mv) {
+            Ok(pos) => pos,
+            Err(_) => return false,
+        };
+
+        // Check if the new position is a checkmate
+        new_pos.is_checkmate()
     }
 }
 
