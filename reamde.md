@@ -10,6 +10,20 @@ The project consists of two main parts:
 
 ## How to run the project?
 
+```bash
+# Install all dependencies
+
+yarn
+
+cd checkmate-validator
+make build
+cd -
+
+
+
+
+```
+
 **1. Deploy checkmate-validator contract:**
 
 ```bash

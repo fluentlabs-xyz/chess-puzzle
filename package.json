@@ -7,7 +7,7 @@
     "compile": "npx hardhat compile",
     "typechain": "npx hardhat typechain",
     "test": "npx hardhat test",
-    "deploy": "npx hardhat run --network localhost scripts/deploy.ts"
+    "deploy": "npx hardhat deploy"
   },
   "keywords": [],
   "author": "",
