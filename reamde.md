@@ -34,7 +34,7 @@ npm run new-game
 
 You can use amazing [lichess.org](https://lichess.org/analysis/standard) to generate the puzzle.
 
-![lichess analysis tool](image.png)
+![lichess analysis tool](assets/lichess-board.png)
 
 You need to create a puzzle which can be solved in 1 move.
 
