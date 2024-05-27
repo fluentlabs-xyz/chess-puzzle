@@ -29,7 +29,7 @@ describe("ChessPuzzle", function () {
       );
 
       await token.mint(owner.address, 1000);
-      await token.approve(puzzle.getAddress(), 500);
+      await token.approve(await puzzle.getAddress(), 500);
 
       const fen =
         "r1bqkbnr/ppp2ppp/2np4/4p2Q/2B1P3/8/PPPP1PPP/RNB1K1NR w KQkq - 0 4";
