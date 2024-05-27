@@ -1,3 +1,9 @@
+#![cfg_attr(not(feature = "std"), no_std)]
+#![allow(dead_code)]
+
+extern crate alloc;
+extern crate fluentbase_sdk;
+
 use alloc::string::String;
 
 use alloy_sol_types::{sol, SolCall, SolValue};
@@ -62,8 +68,8 @@ impl<'a> CHESS<'a> {
         // Convert the Fen object to a Setup object
         let setup = Setup::from(fen);
 
-        // Convert the Setup object to a Chess object
-        let pos = match Chess::from_setup(setup, CastlingMode::Standard) {
+        // Check if the board is valid
+        match Chess::from_setup(setup, CastlingMode::Standard) {
             Ok(_) => return true,
             Err(_) => return false,
         };
@@ -71,10 +77,16 @@ impl<'a> CHESS<'a> {
 }
 
 // Function to deploy the contract
-pub fn deploy() {}
+#[cfg(not(feature = "std"))]
+#[no_mangle]
+#[cfg(target_arch = "wasm32")]
+pub extern "C" fn deploy() {}
 
+#[cfg(not(feature = "std"))]
+#[no_mangle]
+#[cfg(target_arch = "wasm32")]
 // Main function
-pub fn main() {
+pub extern "C" fn main() {
     // Create a default execution context
     let ctx = ExecutionContext::default();
     // Get the contract input

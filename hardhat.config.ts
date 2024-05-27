@@ -6,9 +6,9 @@ require("dotenv").config();
 const DEPLOYER_PRIVATE_KEY = process.env.DEPLOYER_PRIVATE_KEY || "";
 
 const config: HardhatUserConfig = {
-  defaultNetwork: "hardhat",
+  defaultNetwork: "localhost",
   networks: {
-    local: {
+    localhost: {
       url: "http://127.0.0.1:8545",
       accounts: [DEPLOYER_PRIVATE_KEY],
     },

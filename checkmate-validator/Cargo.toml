@@ -7,10 +7,11 @@ version = "0.1.0"
 alloy-sol-types = {version = "0.7.4", default-features = false}
 
 fluentbase-sdk = {git = "https://github.com/fluentlabs-xyz/fluentbase", default-features = false}
-shakmaty = {git = "https://github.com/dmitry123/shakmaty", default-features = false, features = ["alloc"]}
+shakmaty = {git = "https://github.com/niklasf/shakmaty", default-features = false, features = ["alloc"]}
 
 [lib]
 crate-type = ["cdylib", "staticlib"]
+path = "lib.rs"
 
 [profile.release]
 lto = true

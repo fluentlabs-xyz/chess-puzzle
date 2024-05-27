@@ -1,31 +1,42 @@
 .DEFAULT_GOAL := all
 
-FILES = chess greeting
-RUSTFLAGS='-C link-arg=-zstack-size=131072 -C target-feature=+bulk-memory -C opt-level=z -C strip=symbols'
+# Compilation flags
+RUSTFLAGS := '-C link-arg=-zstack-size=131072 -C target-feature=+bulk-memory -C opt-level=z -C strip=symbols'
 
-WASM_TARGET=./target/wasm32-unknown-unknown/release/checkmate_validator.wasm
-WASM_OUTPUT_DIR=bin
+# Paths to the target WASM file and output directory
+WASM_TARGET := ./target/wasm32-unknown-unknown/release/checkmate_validator.wasm
+WASM_OUTPUT_DIR := bin
+WASM_OUTPUT_FILE := $(WASM_OUTPUT_DIR)/checkmate_validator.wasm
+WASM_WAT_FILE := $(WASM_OUTPUT_DIR)/checkmate_validator.wat
 
-all: build deploy-local
+# Commands
+CARGO_BUILD := cargo build --release --target=wasm32-unknown-unknown --no-default-features
+RM := rm -rf
+MKDIR := mkdir -p
+CP := cp
+WASM2WAT := wasm2wat
 
-build: 
+# Targets
+all: build
+
+build: prepare_output_dir
 	@echo "Building the project..."
-	RUSTFLAGS=$(RUSTFLAGS) cargo b --release --target=wasm32-unknown-unknown --no-default-features
-
-	@echo "Preparing the output directory..."
-	rm -rf $(WASM_OUTPUT_DIR)
-	mkdir -p $(WASM_OUTPUT_DIR)
+	RUSTFLAGS=$(RUSTFLAGS) $(CARGO_BUILD)
 
 	@echo "Copying the wasm file to the output directory..."
-	cp $(WASM_TARGET) ./$(WASM_OUTPUT_DIR)/checkmate_validator.wasm
+	$(CP) $(WASM_TARGET) $(WASM_OUTPUT_FILE)
 
 	@echo "Converting wasm to wat..."
-	wasm2wat ./bin/checkmate_validator.wasm > ./bin/checkmate_validator.wat
+	$(WASM2WAT) $(WASM_OUTPUT_FILE) > $(WASM_WAT_FILE)
 
-deploy-local: build
-	@echo "Deploying the contract locally..."
-	cd deployer && node deploy-contract.js --local ../$(WASM_OUTPUT_DIR)/checkmate_validator.wasm
+prepare_output_dir:
+	@echo "Preparing the output directory..."
+	$(RM) $(WASM_OUTPUT_DIR)
+	$(MKDIR) $(WASM_OUTPUT_DIR)
 
-deploy-dev: build
-	@echo "Deploying the contract to development environment..."
-	cd deployer && node deploy-contract.js --dev ../$(WASM_OUTPUT_DIR)/checkmate_validator.wasm
+clean:
+	@echo "Cleaning the project..."
+	$(RM) $(WASM_OUTPUT_DIR)
+	$(RM) ./target
+
+.PHONY: all build prepare_output_dir clean
