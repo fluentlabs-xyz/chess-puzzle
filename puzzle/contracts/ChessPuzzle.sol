@@ -32,9 +32,10 @@ contract ChessPuzzle {
     /// @param reward Reward in tokens received by the solver
     /// @param tokenAddress Address of the reward token
     event PuzzleSolved(
-        string indexed fen,
+        string fen,
+        string move,
         address indexed solver,
-        uint256 reward,
+        uint256 indexed reward,
         address indexed tokenAddress
     );
 
@@ -97,7 +98,13 @@ contract ChessPuzzle {
             "Reward transfer failed"
         );
 
-        emit PuzzleSolved(fen, msg.sender, puzzle.reward, puzzle.tokenAddress);
+        emit PuzzleSolved(
+            fen,
+            move,
+            msg.sender,
+            puzzle.reward,
+            puzzle.tokenAddress
+        );
         delete puzzles[fen];
         for (uint256 i = 0; i < puzzleList.length; i++) {
             if (

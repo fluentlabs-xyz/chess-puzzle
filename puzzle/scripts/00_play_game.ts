@@ -148,7 +148,10 @@ function checkPuzzleSolvedEvent(logs: Log[], contractInterface: Interface) {
             parsedLog.args.solver
           }\n\tTokenAddress ${
             parsedLog.args.tokenAddress
-          }\n\tReward ${ethers.formatEther(parsedLog.args.reward)}`
+          }\n\tReward ${ethers.formatEther(parsedLog.args.reward)}
+          \n\tFEN ${JSON.stringify(
+            parsedLog.args.fen
+          )}\n\tMove ${JSON.stringify(parsedLog.args.move)}`
         );
 
         return;
