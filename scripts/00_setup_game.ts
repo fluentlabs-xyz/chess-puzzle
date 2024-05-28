@@ -8,18 +8,13 @@ async function main() {
   const reward = ethers.parseEther("1000");
   const fen: string =
     "r1bqkbnr/ppp2ppp/2np4/4p2Q/2B1P3/8/PPPP1PPP/RNB1K1NR w KQkq - 0 4";
-  const checkmateMove = "Qxf7";
-  const notCheckmateMove = "Qg6";
-  console.log(fenToLichessUrl(fen));
-
-  const move = checkmateMove;
 
   const { deployer } = await getNamedAccounts();
   const gameMaster: Signer = await ethers.getSigner(deployer);
   const gameMasterAddress = await gameMaster.getAddress();
 
   const playerWallet = ethers.Wallet.createRandom();
-  console.log("player privateKey", playerWallet.privateKey)
+  console.log("player", playerWallet.privateKey, playerWallet.address);
   const player: Signer = playerWallet.connect(ethers.provider);
   const playerAddress = await player.getAddress();
 
@@ -31,23 +26,13 @@ async function main() {
       gasPrice: ethers.parseUnits("20", "gwei"),
     })
   ).wait();
+
   console.log(
     "----------------------------------------------------------------"
   );
   console.log("Setting up accounts and contracts");
   console.log(
     "----------------------------------------------------------------"
-  );
-
-  console.log(
-    `Game Master: ${gameMasterAddress}; Balance: ${ethers.formatEther(
-      await ethers.provider.getBalance(gameMasterAddress)
-    )} ETH`
-  );
-  console.log(
-    `Player: ${playerAddress}; Balance: ${ethers.formatEther(
-      await ethers.provider.getBalance(playerAddress)
-    )} ETH`
   );
 
   const eloTokenDeployment = await deployments.get("FluentEloToken");
@@ -112,64 +97,16 @@ async function main() {
     }\n\tReward: ${ethers.formatEther(puzzle.reward)}`
   );
 
-  console.log(`Solving the puzzle with move: ${move}`);
-
-  try {
-    const tx = await chessPuzzle.connect(player).solvePuzzle(fen, move);
-    const receipt = await tx.wait();
-    if (!receipt) {
-      throw new Error("Transaction failed");
-    }
-    checkPuzzleSolvedEvent(receipt.logs, chessPuzzle.interface);
-
-    const playerBalance = await eloToken.balanceOf(playerAddress);
-    if (playerBalance == reward) {
-      console.log("Yay! Player received the reward");
-    } else {
-      console.log("Ooops! Wrong move, try again");
-    }
-  } catch (error: any) {
-    if (error.message.includes("Incorrect move")) {
-      console.log("Ooops! Wrong move, try again...");
-    } else {
-      throw error;
-    }
-  }
-}
-
-function checkPuzzleSolvedEvent(logs: Log[], contractInterface: Interface) {
-  for (const log of logs) {
-    try {
-      const parsedLog = contractInterface.parseLog(log);
-      if (!parsedLog) {
-        continue;
-      }
-      if (parsedLog.name === "PuzzleSolved") {
-        console.log(
-          `PuzzleSolved event detected:\n\tSolver ${
-            parsedLog.args.solver
-          }\n\tTokenAddress ${
-            parsedLog.args.tokenAddress
-          }\n\tReward ${ethers.formatEther(parsedLog.args.reward)}
-          \n\tFEN ${JSON.stringify(
-            parsedLog.args.fen
-          )}\n\tMove ${JSON.stringify(parsedLog.args.move)}`
-        );
-
-        return;
-      }
-    } catch (error) {
-      console.error(error);
-    }
-  }
-  console.log("PuzzleSolved event not found");
+  console.log(
+    "----------------------------------------------------------------"
+  );
 }
 
 function fenToLichessUrl(fen: string): string {
   // Replace spaces with underscores
   const urlFen = fen.replace(/ /g, "_");
   // Construct the Lichess analysis URL
-  const lichessUrl = `https://lichess.org/analysis/standard/${urlFen}`;
+  const lichessUrl = `http://localhost:3000/${urlFen}`;
   return lichessUrl;
 }
 
