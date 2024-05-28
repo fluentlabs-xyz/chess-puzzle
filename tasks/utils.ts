@@ -1,10 +1,10 @@
-const { Chess } = require("chess.js");
+import { Chess } from "chess.js";
 
-const generateMateInOne = () => {
+export function generateMateInOne(numPuzzles: number): string[] {
   const chess = new Chess();
-  const mateInOnePositions = [];
+  const mateInOnePositions: string[] = [];
 
-  const generateRandomPosition = () => {
+  const generateRandomPosition = (): boolean => {
     const moves = chess.moves();
     if (moves.length === 0) {
       return false;
@@ -14,7 +14,7 @@ const generateMateInOne = () => {
     return true;
   };
 
-  const isMateInOne = (move) => {
+  const isMateInOne = (move: string): boolean => {
     const newChess = new Chess(chess.fen());
     newChess.move(move);
     const opponentMoves = newChess.moves();
@@ -28,7 +28,7 @@ const generateMateInOne = () => {
     return true;
   };
 
-  while (mateInOnePositions.length < 20) {
+  while (mateInOnePositions.length < numPuzzles) {
     chess.reset();
     let validPosition = true;
     for (let i = 0; i < 20; i++) {
@@ -41,7 +41,7 @@ const generateMateInOne = () => {
 
     const moves = chess.moves({ verbose: true });
     for (let move of moves) {
-      if (isMateInOne(move)) {
+      if (isMateInOne(move.san)) {
         mateInOnePositions.push(chess.fen());
         break;
       }
@@ -49,10 +49,4 @@ const generateMateInOne = () => {
   }
 
   return mateInOnePositions;
-};
-
-const mateInOnePositions = generateMateInOne();
-console.log("Generated FEN strings for mate in one positions:");
-mateInOnePositions.forEach((fen, index) => {
-  console.log(`${fen}`);
-});
+}

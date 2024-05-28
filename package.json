@@ -49,6 +49,7 @@
     "typescript": "^5.4.5"
   },
   "dependencies": {
+    "chess.js": "^1.0.0-beta.8",
     "fs": "^0.0.1-security"
   }
 }

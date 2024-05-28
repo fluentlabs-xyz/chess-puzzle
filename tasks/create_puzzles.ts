@@ -1,23 +1,26 @@
-import { task } from "hardhat/config";
 import { Signer } from "ethers";
-import fs from "fs";
-import path from "path";
+import { task } from "hardhat/config";
+import { generateMateInOne } from "./utils";
 
-task("create-puzzles", "Create chess puzzles from a file")
-  .addPositionalParam("fenFile", "The path to the file containing FEN strings")
-  .addOptionalParam("reward", "The reward amount in tokens", "1000")
-  .addOptionalParam("url", "URL", "http://localhost:3000")
-  .setAction(async ({ fenFile, reward, url }, hre) => {
+task("create-puzzles", "Generate chess puzzles and deploy them to the contract")
+  .addParam("num", "The number of puzzles to generate", "10")
+  .addOptionalParam(
+    "reward",
+    "The reward amount in tokens for each puzzle",
+    "1000"
+  )
+  .addOptionalParam(
+    "url",
+    "The URL for viewing the puzzles",
+    "http://localhost:3000"
+  )
+  .setAction(async ({ num, reward, url }, hre) => {
     const { ethers, deployments, getNamedAccounts } = hre;
 
     const rewardAmount = ethers.parseEther(reward);
-
-    const fenFilePath = path.resolve(fenFile);
-    const fenData = fs.readFileSync(fenFilePath, "utf8");
-    const fens: string[] = fenData
-      .split("\n")
-      .filter((line) => line.trim() !== "");
-
+    console.log(`Generating ${parseInt(num)} chess puzzles...`);
+    const fens = generateMateInOne(parseInt(num));
+    console.log("Generated FEN strings for mate in one positions:", fens);
     const { deployer } = await getNamedAccounts();
     const gameMaster: Signer = await ethers.getSigner(deployer);
     const gameMasterAddress = await gameMaster.getAddress();
@@ -25,7 +28,7 @@ task("create-puzzles", "Create chess puzzles from a file")
     console.log(
       "----------------------------------------------------------------"
     );
-    console.log("Setting up accounts and contracts");
+    console.log("Initializing accounts and contracts");
     console.log(
       "----------------------------------------------------------------"
     );
@@ -37,7 +40,7 @@ task("create-puzzles", "Create chess puzzles from a file")
       gameMaster
     );
     const eloTokenAddress = await eloToken.getAddress();
-    console.log("FluentEloToken:", eloTokenAddress);
+    console.log("FluentEloToken Address:", eloTokenAddress);
 
     const chessPuzzleDeployment = await deployments.get("ChessPuzzle");
     const chessPuzzle = await ethers.getContractAt(
@@ -46,10 +49,12 @@ task("create-puzzles", "Create chess puzzles from a file")
       gameMaster
     );
     const chessPuzzleAddress = await chessPuzzle.getAddress();
-    console.log("ChessPuzzle Address:", chessPuzzleAddress);
+    console.log("ChessPuzzle Contract Address:", chessPuzzleAddress);
 
     console.log(
-      `Minting ${ethers.formatEther(rewardAmount)} * ${fens.length} tokens for the game master`
+      `Minting ${ethers.formatEther(rewardAmount)} tokens for each puzzle (${
+        fens.length
+      } puzzles)`
     );
     await (
       await eloToken.mint(gameMasterAddress, rewardAmount * BigInt(fens.length))
@@ -62,17 +67,15 @@ task("create-puzzles", "Create chess puzzles from a file")
     console.log(
       "----------------------------------------------------------------"
     );
-    console.log("");
-    console.log("");
     console.log("Setting up the game...");
     console.log(
       "----------------------------------------------------------------"
     );
 
     console.log(
-      `Approving ${ethers.formatEther(
-        rewardAmount
-      )} * ${fens.length} tokens for the chess puzzle`
+      `Approving ${ethers.formatEther(rewardAmount)} tokens for each puzzle (${
+        fens.length
+      } puzzles)`
     );
     await (
       await eloToken.approve(
@@ -88,15 +91,15 @@ task("create-puzzles", "Create chess puzzles from a file")
           await chessPuzzle.createPuzzle(fen, rewardAmount, eloTokenAddress)
         ).wait();
         console.log(
-          `Puzzle created: ${createPuzzleUrl(
+          `Puzzle created successfully: ${createPuzzleUrl(
             url,
             fen,
             chessPuzzleAddress
-          )}\nreward: ${ethers.formatEther(rewardAmount)}\n`
+          )}\nReward: ${ethers.formatEther(rewardAmount)} tokens\n`
         );
       } catch (error: any) {
         if (error.message.includes("Puzzle already exists")) {
-          console.log("Puzzle already exists, continuing...");
+          console.log("Puzzle already exists, skipping...");
         } else {
           throw error;
         }
@@ -111,12 +114,10 @@ task("create-puzzles", "Create chess puzzles from a file")
       "----------------------------------------------------------------"
     );
 
+    console.log("All puzzles created successfully!");
     console.log(
-      "All puzzles created successfully"
+      `Open ${url + "?contract=" + chessPuzzleAddress} to view the puzzles`
     );
-    console.log(
-      `open ${url+"?contract="+chessPuzzleAddress} to view the puzzles`
-    )
   });
 
 function createPuzzleUrl(
@@ -126,7 +127,7 @@ function createPuzzleUrl(
 ): string {
   // Replace spaces with underscores
   const urlFen = fen.replace(/ /g, "_");
-  // Construct the Lichess analysis URL
-  const lichessUrl = `${url}/${urlFen}?contract=${chessPuzzleAddress}`;
-  return lichessUrl;
+  // Construct the puzzle viewing URL
+  const puzzleUrl = `${url}/${urlFen}?contract=${chessPuzzleAddress}`;
+  return puzzleUrl;
 }
