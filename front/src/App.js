@@ -1,94 +1,78 @@
-import React, { useState } from "react";
-import {
-  BrowserRouter as Router,
-  Routes,
-  Route,
-  useLocation,
-} from "react-router-dom";
-import Chessboard from "./Chessboard";
-import "./App.css";
-import { ethers } from "ethers";
-import { solveChessPuzzle } from "./web3";
 import { BrowserProvider } from "ethers";
-const App = () => {
-  const location = useLocation();
-  const fenUrl = location.pathname.slice(1).replace(/_/g, " ");
-  console.log(fenUrl);
+import React, { useEffect, useState } from "react";
+import { Route, BrowserRouter as Router, Routes } from "react-router-dom";
+import "./App.css";
+import Chessboard from "./Chessboard";
+import { getPuzzleDetails } from "./web3";
 
-  const [fen, setFen] = useState(fenUrl);
-  const [move, setMove] = useState("");
-  const [eloTokenAddress, setEloTokenAddress] = useState("");
-  const [chessPuzzleAddress, setChessPuzzleAddress] = useState("");
+const parseUrl = (url) => {
+  const urlObject = new URL(url);
+  const contractAddress = urlObject.searchParams.get("contract");
+  const pathParts = urlObject.pathname.slice(1).replace(/_/g, " ");
+  const fen = decodeURIComponent(pathParts);
+  return { fen, contractAddress };
+};
+
+const App = () => {
+  const { fen, contractAddress: chessPuzzleAddress } = parseUrl(
+    window.location.href
+  );
   const [message, setMessage] = useState("");
   const [isSolved, setIsSolved] = useState(false);
+  const [puzzleDetails, setPuzzleDetails] = useState(null);
 
-  const handleSolvePuzzle = async () => {
-    if (!fen || !move || !eloTokenAddress || !chessPuzzleAddress) {
-      setMessage("Please provide FEN, move, and both contract addresses.");
-      return;
-    }
-
-    if (typeof window.ethereum !== "undefined") {
-      const provider = new BrowserProvider(window.ethereum);
-      const playerAddress = (await provider.listAccounts())[0];
-
-      try {
-        const solved = await solveChessPuzzle(
-          provider,
-          eloTokenAddress,
-          chessPuzzleAddress,
-          fen,
-          move,
-          playerAddress
-        );
-        if (solved) {
-          setIsSolved(true);
-          setMessage("Puzzle solved successfully!");
-        } else {
-          setIsSolved(false);
-          setMessage("Wrong move, try again.");
+  useEffect(() => {
+    const fetchPuzzleDetails = async () => {
+      if (typeof window.ethereum !== "undefined") {
+        const provider = new BrowserProvider(window.ethereum);
+        try {
+          const puzzle = await getPuzzleDetails(
+            provider,
+            chessPuzzleAddress,
+            fen
+          );
+          setPuzzleDetails(puzzle);
+          setIsSolved(puzzle.isNullPuzzle || puzzle.isSolved);
+          console.log(puzzle.reward);
+        } catch (error) {
+          console.error("Error fetching puzzle details:", error);
+          setMessage("Error fetching puzzle details.");
         }
-      } catch (error) {
-        setMessage(`Error: ${error.message}`);
+      } else {
+        setMessage("Please install MetaMask.");
       }
-    } else {
-      setMessage("Please install MetaMask.");
-    }
-  };
+    };
+    fetchPuzzleDetails();
+  }, [chessPuzzleAddress, fen]);
 
   return (
     <div className="App">
       <h1>Chess Analysis Board</h1>
-      <Chessboard fen={fen} isSolved={isSolved} />
-      <div className="input-container">
-        <input
-          type="text"
-          placeholder="Enter FEN"
-          value={fen}
-          onChange={(e) => setFen(e.target.value)}
-        />
-        <input
-          type="text"
-          placeholder="Enter move"
-          value={move}
-          onChange={(e) => setMove(e.target.value)}
-        />
-        <input
-          type="text"
-          placeholder="Enter EloToken contract address"
-          value={eloTokenAddress}
-          onChange={(e) => setEloTokenAddress(e.target.value)}
-        />
-        <input
-          type="text"
-          placeholder="Enter ChessPuzzle contract address"
-          value={chessPuzzleAddress}
-          onChange={(e) => setChessPuzzleAddress(e.target.value)}
-        />
-        <button onClick={handleSolvePuzzle}>Solve Puzzle</button>
-        {message && <p>{message}</p>}
-        {/* <Chessboard fen={fenUrl} /> */}
-      </div>
+      {message && <h3>{message}</h3>}
+      {isSolved ? (
+        <>
+          <h2>Puzzle has already been solved!</h2>
+          <Chessboard
+            fen={fen}
+            isPuzzleSolved={isSolved}
+            chessPuzzleAddress={chessPuzzleAddress}
+          />
+        </>
+      ) : (
+        <>
+          <Chessboard
+            fen={fen}
+            isPuzzleSolved={isSolved}
+            chessPuzzleAddress={chessPuzzleAddress}
+          />
+        </>
+      )}
+      {puzzleDetails && !puzzleDetails.isNullPuzzle && (
+        <div>
+          <p>Reward token: {puzzleDetails.tokenAddress}</p>
+          <p>Reward: {puzzleDetails.reward}</p>
+        </div>
+      )}
     </div>
   );
 };

@@ -5,6 +5,7 @@ import "./assets/chessground.base.css";
 import "./assets/chessground.brown.css";
 import "./assets/chessground.cburnett.css";
 import { checkPuzzleSolvedEvent, solveChessPuzzle } from "./web3";
+import { BrowserProvider, JsonRpcProvider } from "ethers";
 
 const toDests = (chess) => {
   const dests = new Map();
@@ -91,20 +92,38 @@ function cleanMove(move) {
   return move.replace("+", "").replace("#", "");
 }
 
-const Chessboard = ({ fen }) => {
+const Chessboard = ({ fen, isPuzzleSolved, chessPuzzleAddress }) => {
   const [chess, setChess] = useState(new Chess(fen));
   const [shouldUndo, setShouldUndo] = useState(false);
-  const [isSolved, setIsSolved] = useState(false); // Состояние для отслеживания статуса решения задачи
+  const [isSolved, setIsSolved] = useState(isPuzzleSolved);
   const containerRef = useRef(null);
   const chessgroundRef = useRef(null);
 
   useEffect(() => {
+    setIsSolved(isPuzzleSolved);
+  }, [isPuzzleSolved]);
+
+  useEffect(() => {
+    setChess(new Chess(fen));
+  }, [fen]);
+
+  useEffect(() => {
     const handleMove = async (chessground, from, to) => {
+      const provider = new BrowserProvider(window.ethereum);
       const move = chess.move({ from, to });
       if (move) {
         if (chess.isCheckmate()) {
           console.log("Checkmate");
-          setIsSolved(true); // Пользователь решил задачу правильно
+          const tx = await solveChessPuzzle(
+            provider,
+            chessPuzzleAddress,
+            fen,
+            cleanMove(move.san)
+          );
+          console.log(tx);
+          if (tx) {
+            setIsSolved(true);
+          }
         } else {
           console.log("Not checkmate");
           setShouldUndo(true);
@@ -148,7 +167,7 @@ const Chessboard = ({ fen }) => {
         chessground.destroy();
       };
     }
-  }, [chess]);
+  }, [chess, fen, chessPuzzleAddress]);
 
   useEffect(() => {
     if (shouldUndo && chessgroundRef.current) {
@@ -171,8 +190,11 @@ const Chessboard = ({ fen }) => {
   return (
     <div>
       <div ref={containerRef} style={{ width: "400px", height: "400px" }}></div>
-      {isSolved && <p>Congratulations! You solved the puzzle!</p>}
-      {!isSolved && <p>Solve the puzzle in one move!</p>}
+      {isSolved ? (
+        <p>Congratulations! You solved the puzzle!</p>
+      ) : (
+        <p>Solve the puzzle in one move!</p>
+      )}
     </div>
   );
 };
