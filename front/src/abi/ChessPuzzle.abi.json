@@ -135,7 +135,7 @@
       },
       {
         "internalType": "bool",
-        "name": "isSolved",
+        "name": "isActive",
         "type": "bool"
       }
     ],
@@ -144,7 +144,7 @@
   },
   {
     "inputs": [],
-    "name": "getUnsolvedPuzzles",
+    "name": "getPuzzles",
     "outputs": [
       {
         "internalType": "string[]",
@@ -201,7 +201,7 @@
       },
       {
         "internalType": "bool",
-        "name": "isSolved",
+        "name": "isActive",
         "type": "bool"
       }
     ],

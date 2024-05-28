@@ -13,20 +13,6 @@ async function main() {
   const gameMaster: Signer = await ethers.getSigner(deployer);
   const gameMasterAddress = await gameMaster.getAddress();
 
-  const playerWallet = ethers.Wallet.createRandom();
-  console.log("player", playerWallet.privateKey, playerWallet.address);
-  const player: Signer = playerWallet.connect(ethers.provider);
-  const playerAddress = await player.getAddress();
-
-  // Fund the player wallet
-  await (
-    await gameMaster.sendTransaction({
-      to: playerAddress,
-      value: ethers.parseEther("10"),
-      gasPrice: ethers.parseUnits("20", "gwei"),
-    })
-  ).wait();
-
   console.log(
     "----------------------------------------------------------------"
   );
@@ -90,11 +76,10 @@ async function main() {
 
   const puzzle = await chessPuzzle.getPuzzle(fen);
   console.log(
-    `Puzzle to solve:\n\tlink: ${fenToLichessUrl(
-      fen
-    )}\n\tFEN: ${fen}\n\tReward token: ${
-      puzzle.tokenAddress
-    }\n\tReward: ${ethers.formatEther(puzzle.reward)}`
+    `Puzzle created: ${fenToLichessUrl(
+      fen,
+      chessPuzzleAddress
+    )}\nreward: ${ethers.formatEther(puzzle.reward)}\n`
   );
 
   console.log(
@@ -102,11 +87,11 @@ async function main() {
   );
 }
 
-function fenToLichessUrl(fen: string): string {
+function fenToLichessUrl(fen: string, chessPuzzleAddress: string): string {
   // Replace spaces with underscores
   const urlFen = fen.replace(/ /g, "_");
   // Construct the Lichess analysis URL
-  const lichessUrl = `http://localhost:3000/${urlFen}`;
+  const lichessUrl = `http://localhost:3000/${urlFen}?contract=${chessPuzzleAddress}`;
   return lichessUrl;
 }
 

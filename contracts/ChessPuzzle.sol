@@ -9,7 +9,7 @@ contract ChessPuzzle {
         address creator; /// @notice Address of the puzzle creator
         address tokenAddress; /// @notice Address of the reward token
         uint256 reward; /// @notice Reward in tokens for solving the puzzle
-        bool isSolved; /// @notice Status of the puzzle: solved or not
+        bool isActive; /// @notice Status of the puzzle: solved or not
     }
 
     mapping(string => Puzzle) public puzzles;
@@ -72,7 +72,7 @@ contract ChessPuzzle {
             creator: msg.sender,
             tokenAddress: tokenAddress,
             reward: reward,
-            isSolved: false
+            isActive: true
         });
         puzzleList.push(fen);
 
@@ -87,12 +87,12 @@ contract ChessPuzzle {
     function solvePuzzle(string calldata fen, string calldata move) external {
         Puzzle storage puzzle = puzzles[fen];
         require(puzzle.creator != address(0), "Puzzle does not exist");
-        require(!puzzle.isSolved, "Puzzle already solved");
+        require(puzzle.isActive, "Puzzle is not active");
 
         bool isCheckmate = chess.isCheckmate(fen, move);
         require(isCheckmate, "Incorrect move");
 
-        puzzle.isSolved = true;
+        puzzle.isActive = true;
         require(
             IERC20(puzzle.tokenAddress).transfer(msg.sender, puzzle.reward),
             "Reward transfer failed"
@@ -123,7 +123,7 @@ contract ChessPuzzle {
     /// @return creator Address of the puzzle creator
     /// @return tokenAddress Address of the reward token
     /// @return reward Reward in tokens for solving the puzzle
-    /// @return isSolved Status of the puzzle: solved or not
+    /// @return isActive Status of the puzzle: solved or not
     function getPuzzle(
         string calldata fen
     )
@@ -133,7 +133,7 @@ contract ChessPuzzle {
             address creator,
             address tokenAddress,
             uint256 reward,
-            bool isSolved
+            bool isActive
         )
     {
         Puzzle storage puzzle = puzzles[fen];
@@ -141,13 +141,13 @@ contract ChessPuzzle {
             puzzle.creator,
             puzzle.tokenAddress,
             puzzle.reward,
-            puzzle.isSolved
+            puzzle.isActive
         );
     }
 
     /// @notice Function to get all unsolved puzzles
     /// @return An array of FEN strings of all unsolved puzzles
-    function getUnsolvedPuzzles() external view returns (string[] memory) {
+    function getPuzzles() external view returns (string[] memory) {
         return puzzleList;
     }
 }

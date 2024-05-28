@@ -17,40 +17,20 @@ export async function checkPuzzleSolvedEvent(logs, contractInterface) {
   return false;
 }
 
-export async function solveChessPuzzle(
-  provider,
-  chessPuzzleAddress,
-  fen,
-  move
-) {
-  //   return false;
+export async function solvePuzzle(provider, chessPuzzleAddress, fen, move) {
   const signer = await provider.getSigner();
-  console.log("signer", signer);
-
   const chessPuzzle = new ethers.Contract(
     chessPuzzleAddress,
     chessPuzzleABI,
     signer
   );
-  console.log("chessPuzzle", chessPuzzle);
-
-  // const puzzle = await chessPuzzle.getPuzzle(fen);
-  // console.log(
-  //   `Puzzle to solve:\n\tFEN: ${fen}\n\tReward token: ${
-  //     puzzle.tokenAddress
-  //   }\n\tReward: ${ethers.formatEther(puzzle.reward)}`
-  // );
-
-  // console.log(`Solving the puzzle with move: ${move}`);
-
   try {
-    const puzzles = await chessPuzzle.getUnsolvedPuzzles();
-    console.log(puzzles);
     const tx = await chessPuzzle.solvePuzzle(fen, move);
     const receipt = await tx.wait();
     if (!receipt) {
       throw new Error("Transaction failed");
     }
+    return receipt;
   } catch (error) {
     console.log(error);
   }
@@ -75,14 +55,10 @@ export async function getPuzzleDetails(provider, chessPuzzleAddress, fen) {
   );
   const puzzle = await chessPuzzle.getPuzzle(fen);
 
-  const isNullPuzzle =
-    puzzle.creator === ethers.ZeroAddress &&
-    puzzle.tokenAddress === ethers.ZeroAddress;
-
   return {
     creator: puzzle.creator,
     tokenAddress: puzzle.tokenAddress,
     reward: ethers.formatUnits(`${puzzle.reward}`, "ether"),
-    isNullPuzzle,
+    isActive: puzzle.isActive,
   };
 }
