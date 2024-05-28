@@ -14,6 +14,7 @@ export const ProviderProvider = ({ children }) => {
       if (typeof window.ethereum !== "undefined") {
         try {
           const browserProvider = new BrowserProvider(window.ethereum);
+          await browserProvider.send("eth_requestAccounts", []);
           setProvider(browserProvider);
         } catch (err) {
           setError("Failed to initialize provider");
