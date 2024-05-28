@@ -7,7 +7,7 @@ The project consists of two main parts:
 
 - `contracts`: Solidity smart contracts that describe the main logic of the game.
 - `checkmate-validator`: Rust library that allows finding the solution for the given board position and move.
-- `front`: Frontend application that allows users to interact with the game.
+- `web3`: Frontend application that allows users to interact with the game.
 
 ## How to run the project?
 
@@ -33,7 +33,7 @@ cd -
 
 ```bash
 # Start the frontend
-cd front
+cd web3
 docker-compose up -d --build
 cd -
 ```
