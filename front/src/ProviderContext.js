@@ -5,7 +5,7 @@ const ProviderContext = createContext(null);
 
 export const useProvider = () => useContext(ProviderContext);
 
-export const ProviderProvider = ({ children }) => {
+export const Provider = ({ children }) => {
   const [provider, setProvider] = useState(null);
   const [error, setError] = useState(null);
 

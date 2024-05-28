@@ -1,6 +1,6 @@
 import { Chess } from "chess.js";
 import { Chessground } from "chessground";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, useCallback } from "react";
 import "./assets/chessground.base.css";
 import "./assets/chessground.brown.css";
 import "./assets/chessground.cburnett.css";
@@ -34,38 +34,31 @@ const Chessboard = ({ fen, chessPuzzleAddress }) => {
   const [isProviderReady, setIsProviderReady] = useState(false);
   const containerRef = useRef(null);
   const chessgroundRef = useRef(null);
-  const { provider, error } = useProvider();
-
-  useEffect(() => {
-    if (provider) {
-      console.log("Provider ready");
-      setIsProviderReady(true);
-    }
-  }, [provider]);
-  useEffect(() => {
-    const submitSolution = async (move) => {
-      setMessage("Looks like you solved the puzzle! Submitting...");
-      try {
-        if (provider) {
-          const receipt = await solvePuzzle(
-            provider,
-            chessPuzzleAddress,
-            fen,
-            move
-          );
-          if (receipt) {
-            setMessage(`Puzzle solved! Check your wallet.`);
-          } else {
-            setMessage("Transaction failed.");
-          }
+  const { provider, providerError } = useProvider();
+  const submitSolution = async (move) => {
+    setMessage("Looks like you solved the puzzle! Submitting...");
+    try {
+      if (provider) {
+        const receipt = await solvePuzzle(
+          provider,
+          chessPuzzleAddress,
+          fen,
+          move
+        );
+        if (receipt) {
+          setMessage(`Puzzle solved! Check your wallet.`);
+        } else {
+          setMessage("Transaction failed.");
         }
-      } catch (error) {
-        setMessage("Error submitting solution.");
-        console.error(error);
       }
-    };
+    } catch (error) {
+      setMessage("Error submitting solution.");
+      console.error(error);
+    }
+  };
 
-    const handleMove = async (chessground, from, to) => {
+  const handleMove = useCallback(
+    async (chessground, from, to) => {
       if (!isProviderReady) return;
       const move = chess.move({ from, to });
       if (move) {
@@ -87,8 +80,18 @@ const Chessboard = ({ fen, chessPuzzleAddress }) => {
       } else {
         console.log("Invalid move");
       }
-    };
+    },
+    [chess, isProviderReady, submitSolution]
+  );
 
+  useEffect(() => {
+    if (provider) {
+      console.log("Provider ready");
+      setIsProviderReady(true);
+    }
+  }, [provider]);
+
+  useEffect(() => {
     if (containerRef.current && isProviderReady) {
       const chessground = Chessground(containerRef.current, {
         fen: chess.fen(),
@@ -107,7 +110,7 @@ const Chessboard = ({ fen, chessPuzzleAddress }) => {
         },
         animation: {
           enabled: true,
-          duration: 500, 
+          duration: 500,
         },
       });
 
@@ -117,7 +120,7 @@ const Chessboard = ({ fen, chessPuzzleAddress }) => {
         chessground.destroy();
       };
     }
-  }, [chess, fen, chessPuzzleAddress, provider, isProviderReady]);
+  }, [chess, handleMove, isProviderReady]);
 
   useEffect(() => {
     if (shouldUndo && chessgroundRef.current) {
