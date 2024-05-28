@@ -34,4 +34,7 @@ npx hardhat fund-player --amount 10 --player 0xE31537409820e2B99f5ff23937292E094
 
 # Setup the game
 npx hardhat create-puzzles puzzles.txt --reward 500
+
+# Open the game in the browser
+open http://localhost:3000
 ```
