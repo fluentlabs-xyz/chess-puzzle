@@ -18,15 +18,19 @@ export async function checkPuzzleSolvedEvent(logs, contractInterface) {
 
 export async function solvePuzzle(provider, chessPuzzleAddress, fen, move) {
   const signer = await provider.getSigner();
+  console.log("get signer");
   const chessPuzzle = new ethers.Contract(
     chessPuzzleAddress,
     chessPuzzleABI,
     signer
   );
+  console.log("get contract");
   try {
     const tx = await chessPuzzle.solvePuzzle(fen, move);
+    console.log("sent transaction", tx);
     const receipt = await tx.wait();
     if (!receipt) {
+      console.log("got receipt", receipt);
       throw new Error("Transaction failed");
     }
     return receipt;

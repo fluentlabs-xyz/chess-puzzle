@@ -31,10 +31,17 @@ const Chessboard = ({ fen, chessPuzzleAddress }) => {
   const [shouldUndo, setShouldUndo] = useState(false);
   const [message, setMessage] = useState("");
   const [isSolved, setIsSolved] = useState(false);
+  const [isProviderReady, setIsProviderReady] = useState(false);
   const containerRef = useRef(null);
   const chessgroundRef = useRef(null);
   const { provider, error } = useProvider();
 
+  useEffect(() => {
+    if (provider) {
+      console.log("Provider ready");
+      setIsProviderReady(true);
+    }
+  }, [provider]);
   useEffect(() => {
     const submitSolution = async (move) => {
       setMessage("Looks like you solved the puzzle! Submitting...");
@@ -47,7 +54,7 @@ const Chessboard = ({ fen, chessPuzzleAddress }) => {
             move
           );
           if (receipt) {
-            setMessage(`Puzzle solved! Transaction successful.`);
+            setMessage(`Puzzle solved! Check your wallet.`);
           } else {
             setMessage("Transaction failed.");
           }
@@ -59,6 +66,7 @@ const Chessboard = ({ fen, chessPuzzleAddress }) => {
     };
 
     const handleMove = async (chessground, from, to) => {
+      if (!isProviderReady) return;
       const move = chess.move({ from, to });
       if (move) {
         if (chess.isCheckmate()) {
@@ -81,7 +89,7 @@ const Chessboard = ({ fen, chessPuzzleAddress }) => {
       }
     };
 
-    if (containerRef.current) {
+    if (containerRef.current && isProviderReady) {
       const chessground = Chessground(containerRef.current, {
         fen: chess.fen(),
         turnColor: chess.turn() === "w" ? "white" : "black",
@@ -109,7 +117,7 @@ const Chessboard = ({ fen, chessPuzzleAddress }) => {
         chessground.destroy();
       };
     }
-  }, [chess]);
+  }, [chess, fen, chessPuzzleAddress, provider, isProviderReady]);
 
   useEffect(() => {
     if (shouldUndo && chessgroundRef.current) {
