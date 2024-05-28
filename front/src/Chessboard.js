@@ -107,7 +107,7 @@ const Chessboard = ({ fen, chessPuzzleAddress }) => {
         },
         animation: {
           enabled: true,
-          duration: 500, // Длительность анимации в миллисекундах
+          duration: 500, 
         },
       });
 

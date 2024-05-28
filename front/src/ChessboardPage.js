@@ -68,10 +68,7 @@ const ChessboardPage = () => {
           <p>Reward: {puzzleDetails.reward}</p>
         </div>
       )}
-      <Link to={`/?contract=${chessPuzzleAddress}`}>
-        Back to all puzzles
-      </Link>{" "}
-      {/* Добавляем ссылку */}
+      <Link to={`/?contract=${chessPuzzleAddress}`}>Back to all puzzles</Link>
     </div>
   );
 };

@@ -48,8 +48,23 @@ npm install
 ### Deploy contracts
 
 ```bash
+# Compile contracts
+npx hardhat compile
+npx hardhat typechain
+
 # Deploy contracts
 npx hardhat deploy
+```
+
+### Setting up metamask
+
+You can follow the [guide](https://support.metamask.io/networks-and-sidechains/managing-networks/how-to-add-a-custom-network-rpc/) to set up a metamask to connect to the local node.
+
+After you have set up the network and created an account, you can fund it with some test ether.
+
+```bash
+# Fund player to pay GAS
+npx hardhat fund-player --amount 10 --player {accountAddress}
 ```
 
 ### Setup the game
@@ -57,13 +72,12 @@ npx hardhat deploy
 ```bash
 # Setup the game
 npx hardhat create-puzzles --num 10 --reward 550
-
-# Fund player to pay GAS
-npx hardhat fund-player --amount 10 --player 0xE31537409820e2B99f5ff23937292E09452f1d63
 ```
 
 ### Open the game in the browser
 
+You need to replace `{chessPuzzleContract}` with the address of the deployed `ChessPuzzle` contract. You can find the address in the console output after running the `create-puzzles` command.
+
 ```bash
-open http://localhost:3000
+open http://localhost:3000?contract={chessPuzzleContract}
 ```
