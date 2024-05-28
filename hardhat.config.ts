@@ -2,6 +2,7 @@ import { HardhatUserConfig } from "hardhat/types";
 import "hardhat-deploy";
 import "@nomicfoundation/hardhat-toolbox";
 import "./tasks/create_puzzles";
+import "./tasks/fund_player";
 
 require("dotenv").config();
 

@@ -1,6 +1,5 @@
 import { ethers } from "ethers";
 import chessPuzzleABI from "./abi/ChessPuzzle.abi.json";
-import eloTokenABI from "./abi/EloToken.abi.json";
 
 export async function checkPuzzleSolvedEvent(logs, contractInterface) {
   for (let log of logs) {
@@ -34,17 +33,6 @@ export async function solvePuzzle(provider, chessPuzzleAddress, fen, move) {
   } catch (error) {
     console.log(error);
   }
-}
-
-export async function getTokenBalance(
-  provider,
-  eloTokenAddress,
-  playerAddress
-) {
-  const signer = await provider.getSigner();
-  const eloToken = new ethers.Contract(eloTokenAddress, eloTokenABI, signer);
-  const balance = await eloToken.balanceOf(playerAddress);
-  return ethers.formatEther(balance);
 }
 
 export async function getPuzzleDetails(provider, chessPuzzleAddress, fen) {

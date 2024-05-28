@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import Chessboard from "./Chessboard";
 import { useProvider } from "./ProviderContext";
 import { getPuzzleDetails } from "./web3";
+import { Link } from "react-router-dom";
 
 const parseUrl = (url) => {
   const urlObject = new URL(url);
@@ -67,6 +68,10 @@ const ChessboardPage = () => {
           <p>Reward: {puzzleDetails.reward}</p>
         </div>
       )}
+      <Link to={`/?contract=${chessPuzzleAddress}`}>
+        Back to all puzzles
+      </Link>{" "}
+      {/* Добавляем ссылку */}
     </div>
   );
 };

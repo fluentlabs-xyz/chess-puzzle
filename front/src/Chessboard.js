@@ -47,9 +47,7 @@ const Chessboard = ({ fen, chessPuzzleAddress }) => {
             move
           );
           if (receipt) {
-            setMessage(
-              `Puzzle solved! Transaction successful.`
-            );
+            setMessage(`Puzzle solved! Transaction successful.`);
           } else {
             setMessage("Transaction failed.");
           }

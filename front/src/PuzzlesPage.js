@@ -11,7 +11,6 @@ const PuzzlesPage = () => {
   const searchParams = new URLSearchParams(location.search);
   const chessPuzzleAddress = searchParams.get("contract");
   const { provider, error } = useProvider();
-  console.log("provider", provider);
 
   useEffect(() => {
     const fetchPuzzles = async () => {
