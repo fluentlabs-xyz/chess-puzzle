@@ -26,7 +26,7 @@ npx hardhat deploy
 
 # Start the frontend
 cd front
-npm start
+docker-compose up -d --build
 
 # Fund player to pay GAS
 npx hardhat fund-player --amount 10 --player 0xE31537409820e2B99f5ff23937292E09452f1d63
