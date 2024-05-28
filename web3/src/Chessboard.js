@@ -30,11 +30,11 @@ const Chessboard = ({ fen, chessPuzzleAddress }) => {
   const [chess, setChess] = useState(new Chess(fen));
   const [shouldUndo, setShouldUndo] = useState(false);
   const [message, setMessage] = useState("");
-  const [isSolved, setIsSolved] = useState(false);
+  const [, setIsSolved] = useState(false);
   const [isProviderReady, setIsProviderReady] = useState(false);
   const containerRef = useRef(null);
   const chessgroundRef = useRef(null);
-  const { provider, providerError } = useProvider();
+  const { provider } = useProvider();
   const submitSolution = async (move) => {
     setMessage("Looks like you solved the puzzle! Submitting...");
     try {
