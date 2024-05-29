@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import Chessboard from "./Chessboard";
 import { useProvider } from "./ProviderContext";
-import { getPuzzleDetails } from "./web3";
+import { getPuzzleDetails } from "./chessPuzzleContract";
 import { Link } from "react-router-dom";
 
 const parseUrl = (url) => {

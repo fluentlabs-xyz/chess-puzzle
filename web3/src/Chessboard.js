@@ -1,12 +1,12 @@
 import { Chess } from "chess.js";
 import { Chessground } from "chessground";
-import React, { useEffect, useRef, useState, useCallback } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import "./assets/chessground.base.css";
 import "./assets/chessground.brown.css";
 import "./assets/chessground.cburnett.css";
+import { solvePuzzle } from "./chessPuzzleContract";
 import { SQUARES } from "./consts";
 import { useProvider } from "./ProviderContext";
-import { solvePuzzle } from "./web3";
 
 const toDests = (chess) => {
   const dests = new Map();

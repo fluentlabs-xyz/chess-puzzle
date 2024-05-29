@@ -52,3 +52,13 @@ export async function getPuzzleDetails(provider, chessPuzzleAddress, fen) {
     isActive: puzzle.isActive,
   };
 }
+
+export async function getPuzzles(provider, chessPuzzleAddress) {
+  const chessPuzzle = new ethers.Contract(
+    chessPuzzleAddress,
+    chessPuzzleABI,
+    provider
+  );
+  const puzzles = await chessPuzzle.getPuzzles();
+  return puzzles;
+}
