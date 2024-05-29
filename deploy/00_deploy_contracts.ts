@@ -1,7 +1,9 @@
 import { HardhatRuntimeEnvironment } from "hardhat/types";
 import { DeployFunction } from "hardhat-deploy/types";
 import fs from "fs";
-
+import path from "path";
+import crypto from "crypto";
+import { ethers } from "ethers";
 require("dotenv").config();
 
 const DEPLOYER_PRIVATE_KEY =
@@ -10,7 +12,7 @@ const DEPLOYER_PRIVATE_KEY =
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const { deployments, getNamedAccounts, ethers, config, network } = hre;
-  const { deploy } = deployments;
+  const { deploy, save, getOrNull } = deployments;
   const { deployer: deployerAddress } = await getNamedAccounts();
 
   console.log("deployerAddress", deployerAddress);
@@ -25,14 +27,11 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     log: true,
   });
 
-  console.log("FluentEloToken deployed to:", token.address);
-
   // ---------------------
   // Deploy WASM contract
   // ---------------------
   console.log("Deploying WASM contract...");
   const wasmBinaryPath = "./checkmate-validator/bin/checkmate_validator.wasm"; // TODO: Update this path to your actual wasm file
-  const wasmBinary = fs.readFileSync(wasmBinaryPath);
   // @ts-ignore
   const provider = new ethers.JsonRpcProvider(network.config.url);
 
@@ -40,6 +39,46 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   // as using the default wallet enforces a maximum contract size limit,
   // which is not applicable in our case.
   const deployer = new ethers.Wallet(DEPLOYER_PRIVATE_KEY, provider);
+
+  const checkmateValidatorAddress = await deployWasmContract(
+    wasmBinaryPath,
+    deployer,
+    provider,
+    getOrNull,
+    save
+  );
+
+  // ---------------------
+  // Deploy ChessPuzzle contract
+  // ---------------------
+  console.log("Deploying ChessPuzzle contract...");
+  const puzzle = await deploy("ChessPuzzle", {
+    from: deployerAddress,
+    args: [checkmateValidatorAddress],
+    log: true,
+  });
+};
+
+async function deployWasmContract(
+  wasmBinaryPath: string,
+  deployer: ethers.Wallet,
+  provider: ethers.JsonRpcProvider,
+  getOrNull: any,
+  save: any
+) {
+  const wasmBinary = fs.readFileSync(wasmBinaryPath);
+  const wasmBinaryHash = crypto
+    .createHash("sha256")
+    .update(wasmBinary)
+    .digest("hex");
+  const artifactName = path.basename(wasmBinaryPath, ".wasm");
+  const existingDeployment = await getOrNull(artifactName);
+
+  if (existingDeployment && existingDeployment.metadata === wasmBinaryHash) {
+    console.log(`WASM contract bytecode has not changed. Skipping deployment.`);
+    console.log(`Existing contract address: ${existingDeployment.address}`);
+    return existingDeployment.address;
+  }
 
   const gasPrice = (await provider.getFeeData()).gasPrice;
 
@@ -54,24 +93,26 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
   if (receipt && receipt.contractAddress) {
     console.log(`WASM contract deployed at: ${receipt.contractAddress}`);
+
+    const artifact = {
+      abi: [], // Since there's no ABI for the WASM contract
+      bytecode: "0x" + wasmBinary.toString("hex"),
+      deployedBytecode: "0x" + wasmBinary.toString("hex"),
+      metadata: wasmBinaryHash,
+    };
+
+    const deploymentData = {
+      address: receipt.contractAddress,
+      ...artifact,
+    };
+
+    await save(artifactName, deploymentData);
   } else {
     throw new Error("Failed to deploy WASM contract");
   }
 
-  const checkmateValidatorAddress = receipt.contractAddress;
-
-  // ---------------------
-  // Deploy ChessPuzzle contract
-  // ---------------------
-  console.log("Deploying ChessPuzzle contract...");
-  const puzzle = await deploy("ChessPuzzle", {
-    from: deployerAddress,
-    args: [checkmateValidatorAddress],
-    log: true,
-  });
-
-  console.log("ChessPuzzle deployed to:", puzzle.address);
-};
+  return receipt.contractAddress;
+}
 
 export default func;
 func.tags = ["all"];
