@@ -11,22 +11,19 @@ The project consists of two main parts:
 
 ## How to run the project?
 
-### Run [local node](https://github.com/fluentlabs-xyz/fluent)
+### You can use rpc `https://rpc.dev.thefluent.xyz/`
+
+Or you can run [local node](https://github.com/fluentlabs-xyz/fluent)
 
 ```bash
 cd https://github.com/fluentlabs-xyz/fluent
+
+# TODO: after devel will be updated with increased contract size limits remove this line
+# Checkout the dev2 branch
+git checkout dev2
+
 cargo update
-make build
-./target/x86_64-apple-darwin/release/reth node --chain=dev --datadir=./datadir --dev --full --http --port=30305 --metrics=8999
-```
-
-### Compile rust library to WASM
-
-```bash
-# Compile rust library to WASM
-cd checkmate-validator
-make build
-cd -
+cargo run --color=always --bin reth --manifest-path ./bin/reth/Cargo.toml -- node --chain=dev --datadir=./datadir --dev --full --http --port=30305 --metrics=8999
 ```
 
 ### Start the frontend

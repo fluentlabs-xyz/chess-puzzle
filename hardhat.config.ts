@@ -1,6 +1,7 @@
 import { HardhatUserConfig } from "hardhat/types";
 import "hardhat-deploy";
 import "@nomicfoundation/hardhat-toolbox";
+import "@fluentxyz/hardhat-compile-to-wasm";
 import "./tasks/create_puzzles";
 import "./tasks/fund_player";
 
@@ -17,9 +18,10 @@ const config: HardhatUserConfig = {
     },
     dev: {
       url: "https://rpc.dev.thefluent.xyz/",
+      accounts: [DEPLOYER_PRIVATE_KEY],
     },
     hardhat: {
-      chainId: 1337,
+      chainId: 20993,
     },
   },
   solidity: {
@@ -36,6 +38,12 @@ const config: HardhatUserConfig = {
       default: 0,
     },
   },
+  compileToWasmConfig: [
+    {
+      contractDir: "./contracts/checkmate-validator",
+      interfacePath: "./contracts/ICheckmateValidator.sol",
+    },
+  ],
 };
 
 export default config;
