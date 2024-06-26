@@ -115,4 +115,4 @@ async function deployWasmContract(
 }
 
 export default func;
-func.tags = ["all"];
+
