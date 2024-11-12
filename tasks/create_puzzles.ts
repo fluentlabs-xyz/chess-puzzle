@@ -20,7 +20,6 @@ task("create-puzzles", "Generate chess puzzles and deploy them to the contract")
     const rewardAmount = ethers.parseEther(reward);
     console.log(`Generating ${parseInt(num)} chess puzzles...`);
     const fens = generateMateInOne(parseInt(num));
-    console.log("Generated FEN strings for mate in one positions:", fens);
     const { deployer } = await getNamedAccounts();
     const gameMaster: Signer = await ethers.getSigner(deployer);
     const gameMasterAddress = await gameMaster.getAddress();
@@ -51,72 +50,82 @@ task("create-puzzles", "Generate chess puzzles and deploy them to the contract")
     const chessPuzzleAddress = await chessPuzzle.getAddress();
     console.log("ChessPuzzle Contract Address:", chessPuzzleAddress);
 
+    // Mint tokens
     console.log(
       `Minting ${ethers.formatEther(rewardAmount)} tokens for each puzzle (${
         fens.length
       } puzzles)`
     );
-    await (
-      await eloToken.mint(gameMasterAddress, rewardAmount * BigInt(fens.length))
-    ).wait();
+    const mintTx = await eloToken.mint(
+      gameMasterAddress,
+      rewardAmount * BigInt(fens.length)
+    );
+    await mintTx.wait();
+
     console.log(
       `Game Master's token balance: ${ethers.formatEther(
         await eloToken.balanceOf(gameMasterAddress)
       )}`
     );
-    console.log(
-      "----------------------------------------------------------------"
-    );
-    console.log("Setting up the game...");
-    console.log(
-      "----------------------------------------------------------------"
-    );
 
+    // Approve tokens
     console.log(
       `Approving ${ethers.formatEther(rewardAmount)} tokens for each puzzle (${
         fens.length
       } puzzles)`
     );
-    await (
-      await eloToken.approve(
-        chessPuzzleAddress,
-        rewardAmount * BigInt(fens.length)
-      )
-    ).wait();
+    const approveTx = await eloToken.approve(
+      chessPuzzleAddress,
+      rewardAmount * BigInt(fens.length)
+    );
+    await approveTx.wait();
 
-    const createPuzzle = async (fen: string) => {
-      console.log(`Creating a puzzle for FEN: ${fen}`);
+    // Create puzzles sequentially
+    for (const fen of fens) {
+      console.log(`Creating puzzle for FEN: ${fen}`);
       try {
-        await (
-          await chessPuzzle.createPuzzle(fen, rewardAmount, eloTokenAddress)
-        ).wait();
+        // Get current nonce
+        const nonce = await gameMaster.getNonce();
+
+        // Create puzzle with explicit nonce
+        const tx = await chessPuzzle.createPuzzle(
+          fen,
+          rewardAmount,
+          eloTokenAddress,
+          {
+            nonce,
+            gasLimit: 500000, // Explicit gas limit
+          }
+        );
+
+        // Wait for confirmation
+        await tx.wait();
+
         console.log(
           `Puzzle created successfully: ${createPuzzleUrl(
             url,
             fen,
             chessPuzzleAddress
-          )}\nReward: ${ethers.formatEther(rewardAmount)} tokens\n`
+          )}\n` + `Reward: ${ethers.formatEther(rewardAmount)} tokens\n`
         );
+
+        // Add small delay between transactions
+        await new Promise((resolve) => setTimeout(resolve, 1000));
       } catch (error: any) {
         if (error.message.includes("Puzzle already exists")) {
           console.log("Puzzle already exists, skipping...");
         } else {
-          throw error;
+          console.error(`Failed to create puzzle for FEN: ${fen}`, error);
         }
       }
-    };
-
-    for (const fen of fens) {
-      await createPuzzle(fen);
     }
 
     console.log(
       "----------------------------------------------------------------"
     );
-
     console.log("All puzzles created successfully!");
     console.log(
-      `Open ${url + "?contract=" + chessPuzzleAddress} to view the puzzles`
+      `Open ${url}?contract=${chessPuzzleAddress} to view the puzzles`
     );
   });
 
@@ -125,9 +134,6 @@ function createPuzzleUrl(
   fen: string,
   chessPuzzleAddress: string
 ): string {
-  // Replace spaces with underscores
   const urlFen = fen.replace(/ /g, "_");
-  // Construct the puzzle viewing URL
-  const puzzleUrl = `${url}/${urlFen}?contract=${chessPuzzleAddress}`;
-  return puzzleUrl;
+  return `${url}/${urlFen}?contract=${chessPuzzleAddress}`;
 }

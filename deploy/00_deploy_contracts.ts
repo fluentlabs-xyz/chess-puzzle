@@ -31,7 +31,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   // Deploy WASM contract
   // ---------------------
   console.log("Deploying WASM contract...");
-  const wasmBinaryPath = "./checkmate-validator/bin/checkmate_validator.wasm"; // TODO: Update this path to your actual wasm file
+  const wasmBinaryPath = "./contracts/checkmate-validator/lib.wasm"; // TODO: Update this path to your actual wasm file
   // @ts-ignore
   const provider = new ethers.JsonRpcProvider(network.config.url);
 

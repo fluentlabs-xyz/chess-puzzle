@@ -11,19 +11,14 @@ The project consists of two main parts:
 
 ## How to run the project?
 
-### You can use rpc `https://rpc.dev.thefluent.xyz/`
+**DEV RPC `https://rpc.dev.thefluent.xyz/`**
 
-Or you can run [local node](https://github.com/fluentlabs-xyz/fluent)
+**Local node:**
 
 ```bash
-cd https://github.com/fluentlabs-xyz/fluent
+# Check last version at https://github.com/fluentlabs-xyz/fluent/pkgs/container/fluent
 
-# TODO: after devel will be updated with increased contract size limits remove this line
-# Checkout the dev2 branch
-git checkout dev2
-
-cargo update
-cargo run --color=always --bin reth --manifest-path ./bin/reth/Cargo.toml -- node --chain=dev --datadir=./datadir --dev --full --http --port=30305 --metrics=8999
+❯ docker run --rm -it -p 8545:8545 ghcr.io/fluentlabs-xyz/fluent:v0.1.0-dev.8 --chain=dev node --datadir=./datadir --dev --full --http --http.addr=0.0.0.0 --port=30305 --engine.legacy
 ```
 
 ### Start the frontend

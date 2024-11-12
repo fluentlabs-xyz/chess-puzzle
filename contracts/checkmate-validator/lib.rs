@@ -1,12 +1,17 @@
 #![cfg_attr(target_arch = "wasm32", no_std)]
 extern crate alloc;
-extern crate fluentbase_sdk;
 use alloc::string::String;
-use fluentbase_sdk::{basic_entrypoint, derive::router, SharedAPI};
+use fluentbase_sdk::{
+    basic_entrypoint,
+    derive::{function_id, router, Contract},
+    SharedAPI,
+};
 use shakmaty::{fen::Fen, san::San, CastlingMode, Chess, FromSetup, Position, Setup};
 
-#[derive(Default)]
-pub struct CHESS;
+#[derive(Contract)]
+pub struct CHESS<SDK> {
+    sdk: SDK,
+}
 
 pub trait ChessAPI {
     fn is_checkmate(&self, board: String, mv: String) -> bool;
@@ -14,7 +19,8 @@ pub trait ChessAPI {
 }
 
 #[router(mode = "solidity")]
-impl ChessAPI for CHESS {
+impl<SDK: SharedAPI> ChessAPI for CHESS<SDK> {
+    #[function_id("isCheckmate(string,string)")]
     fn is_checkmate(&self, board: String, mv: String) -> bool {
         // Parse the FEN string to a Fen object
         let fen = match Fen::from_ascii(board.as_bytes()) {
@@ -51,6 +57,8 @@ impl ChessAPI for CHESS {
         // Check if the new position is a checkmate
         new_pos.is_checkmate()
     }
+
+    #[function_id("isBoardValid(string)")]
     fn is_board_valid(&self, board: String) -> bool {
         // Parse the FEN string to a Fen object
         let fen = match Fen::from_ascii(board.as_bytes()) {
@@ -69,8 +77,8 @@ impl ChessAPI for CHESS {
     }
 }
 
-impl CHESS {
-    fn deploy<SDK: SharedAPI>(&self) {}
+impl<SDK: SharedAPI> CHESS<SDK> {
+    fn deploy(&self) {}
 }
 
 basic_entrypoint!(CHESS);
@@ -78,96 +86,123 @@ basic_entrypoint!(CHESS);
 #[cfg(test)]
 mod tests {
     use super::*;
-    use alloy_sol_types::SolCall;
-    use fluentbase_sdk::{codec::Encoder, Address, Bytes, ContractInput, LowLevelSDK};
-    use hex_literal::hex;
+    use alloy_sol_types::{sol, SolCall, SolType};
+    use fluentbase_sdk::{journal::JournalState, runtime::TestingContext};
 
-    fn with_test_input<T: Into<Bytes>>(input: T, caller: Option<Address>) {
-        let mut contract_input = ContractInput::default();
-        contract_input.contract_caller = caller.unwrap_or_default();
-        LowLevelSDK::with_test_context(contract_input.encode_to_vec(0));
-        let input: Bytes = input.into();
-        LowLevelSDK::with_test_input(input.into());
+    sol!(
+        function isCheckmate(string memory board, string memory mv) public view returns (bool);
+    );
+
+    #[test]
+    fn test_input_output() {
+        let board = "rnbq1k1r/1p1p3p/5npb/2pQ1p2/p1B1P2P/8/PPP2PP1/RNB1K1NR w KQ - 2 11";
+        let mv = "Qf7";
+
+        let fluent_input = IsCheckmateCall::new((board.to_string(), mv.to_string())).encode();
+
+        let sol_input = isCheckmateCall {
+            board: board.to_string(),
+            mv: mv.to_string(),
+        }
+        .abi_encode();
+
+        assert_eq!(fluent_input.to_vec(), sol_input);
+
+        let fluent_output = IsCheckmateReturn((true,)).encode();
+
+        let sol_output = <(alloy_sol_types::sol_data::Bool,) as SolType>::abi_encode(&(true,));
+
+        assert_eq!(fluent_output.to_vec(), sol_output);
     }
 
-    fn vec_to_bool(data: Vec<u8>) -> bool {
-        assert_eq!(
-            data.len(),
-            32,
-            "Invalid length for Solidity bool representation"
-        );
-
-        data[31] != 0
-    }
     #[test]
     fn test_is_checkmate_no_checkmate() {
-        let chess = CHESS::default();
-        let owner_address = Address::from(hex!("f39Fd6e51aad88F6F4ce6aB8827279cffFb92266"));
-        let call_is_checkmate = isCheckmateCall {
-            board: "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR".to_string(),
-            mv: "e2e4".to_string(),
-        }
-        .abi_encode();
-        with_test_input(call_is_checkmate, Some(owner_address));
-        chess.deploy::<LowLevelSDK>();
-        chess.main::<LowLevelSDK>();
-        let test_output = LowLevelSDK::get_test_output();
+        let input = IsCheckmateCall::new((
+            "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR".to_string(),
+            "e2e4".to_string(),
+        ))
+        .encode();
 
-        assert_eq!(vec_to_bool(test_output), false);
+        println!("Input: {:?}", hex::encode(&input));
+
+        let sdk = TestingContext::empty().with_input(input);
+
+        let mut chess = CHESS::new(JournalState::empty(sdk.clone()));
+
+        chess.deploy();
+        chess.main();
+
+        let encoded_output = &sdk.take_output();
+        println!("encoded output: {:?}", hex::encode(&encoded_output));
+        let result = IsCheckmateReturn::decode(&encoded_output.as_slice()).unwrap();
+
+        assert_eq!(result.0 .0, false);
     }
+
     #[test]
     fn test_is_checkmate_is_checkmate() {
-        let chess = CHESS::default();
-        let owner_address = Address::from(hex!("f39Fd6e51aad88F6F4ce6aB8827279cffFb92266"));
-        let call_is_checkmate = isCheckmateCall {
-            board: "rnbq1k1r/1p1p3p/5npb/2pQ1p2/p1B1P2P/8/PPP2PP1/RNB1K1NR w KQ - 2 11".to_string(),
-            mv: "Qf7".to_string(),
-        }
-        .abi_encode();
+        let input = IsCheckmateCall::new((
+            "rnbq1k1r/1p1p3p/5npb/2pQ1p2/p1B1P2P/8/PPP2PP1/RNB1K1NR w KQ - 2 11".to_string(),
+            "Qf7".to_string(),
+        ))
+        .encode();
 
-        with_test_input(call_is_checkmate, Some(owner_address));
+        println!("Input: {:?}", hex::encode(&input));
 
-        chess.deploy::<LowLevelSDK>();
-        chess.main::<LowLevelSDK>();
+        let sdk = TestingContext::empty().with_input(input);
+        let mut chess = CHESS::new(JournalState::empty(sdk.clone()));
 
-        let test_output = LowLevelSDK::get_test_output();
+        chess.deploy();
+        chess.main();
 
-        assert_eq!(vec_to_bool(test_output), true);
+        let encoded_output = &sdk.take_output();
+        println!("encoded output: {:?}", hex::encode(&encoded_output));
+        let result = IsCheckmateReturn::decode(&encoded_output.as_slice()).unwrap();
+
+        assert_eq!(result.0 .0, true);
     }
+
     #[test]
     fn test_is_board_valid_invalid() {
-        let chess = CHESS::default();
-        let owner_address = Address::from(hex!("f39Fd6e51aad88F6F4ce6aB8827279cffFb92266"));
-        let call_is_checkmate = isBoardValidCall {
-            board: "rrrq1k1r/1p1p3p/5npb/2pQ1p2/p1B1P2P/8/PPP2PP1/RNB1K1NR w KQ - 2 11".to_string(),
-        }
-        .abi_encode();
+        let input = IsBoardValidCall::new((
+            "rrrq1k1r/1p1p3p/5npb/2pQ1p2/p1B1P2P/8/PPP2PP1/RNB1K1NR w KQ - 2 11".to_string(),
+        ))
+        .encode();
 
-        with_test_input(call_is_checkmate, Some(owner_address));
+        println!("Input: {:?}", hex::encode(&input));
 
-        chess.deploy::<LowLevelSDK>();
-        chess.main::<LowLevelSDK>();
+        let sdk = TestingContext::empty().with_input(input);
+        let mut chess = CHESS::new(JournalState::empty(sdk.clone()));
 
-        let test_output = LowLevelSDK::get_test_output();
+        chess.deploy();
+        chess.main();
 
-        assert_eq!(vec_to_bool(test_output), false);
+        let encoded_output = &sdk.take_output();
+        println!("encoded output: {:?}", hex::encode(&encoded_output));
+        let result = IsBoardValidReturn::decode(&encoded_output.as_slice()).unwrap();
+
+        assert_eq!(result.0 .0, false);
     }
+
     #[test]
     fn test_is_board_valid_valid() {
-        let chess = CHESS::default();
-        let owner_address = Address::from(hex!("f39Fd6e51aad88F6F4ce6aB8827279cffFb92266"));
-        let call_is_checkmate = isBoardValidCall {
-            board: "rnbq1k1r/1p1p3p/5npb/2pQ1p2/p1B1P2P/8/PPP2PP1/RNB1K1NR w KQ - 2 11".to_string(),
-        }
-        .abi_encode();
+        let input = IsBoardValidCall::new((
+            "rnbq1k1r/1p1p3p/5npb/2pQ1p2/p1B1P2P/8/PPP2PP1/RNB1K1NR w KQ - 2 11".to_string(),
+        ))
+        .encode();
 
-        with_test_input(call_is_checkmate, Some(owner_address));
+        println!("Input: {:?}", hex::encode(&input));
 
-        chess.deploy::<LowLevelSDK>();
-        chess.main::<LowLevelSDK>();
+        let sdk = TestingContext::empty().with_input(input);
+        let mut chess = CHESS::new(JournalState::empty(sdk.clone()));
 
-        let test_output = LowLevelSDK::get_test_output();
+        chess.deploy();
+        chess.main();
 
-        assert_eq!(vec_to_bool(test_output), true);
+        let encoded_output = &sdk.take_output();
+        println!("encoded output: {:?}", hex::encode(&encoded_output));
+        let result = IsBoardValidReturn::decode(&encoded_output.as_slice()).unwrap();
+
+        assert_eq!(result.0 .0, true);
     }
 }

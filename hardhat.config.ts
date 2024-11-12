@@ -4,6 +4,7 @@ import "@nomicfoundation/hardhat-toolbox";
 import "@fluentxyz/hardhat-compile-to-wasm";
 import "./tasks/create_puzzles";
 import "./tasks/fund_player";
+import "./tasks/unsolved_puzzles";
 
 require("dotenv").config();
 
@@ -17,11 +18,12 @@ const config: HardhatUserConfig = {
       accounts: [DEPLOYER_PRIVATE_KEY],
     },
     dev: {
-      url: "https://rpc.dev.thefluent.xyz/",
+      url: "https://rpc.dev.gblend.xyz/",
       accounts: [DEPLOYER_PRIVATE_KEY],
+      chainId: 20993,
     },
     hardhat: {
-      chainId: 20993,
+      chainId: 1337,
     },
   },
   solidity: {
