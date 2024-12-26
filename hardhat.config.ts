@@ -1,7 +1,7 @@
 import { HardhatUserConfig } from "hardhat/types";
 import "hardhat-deploy";
 import "@nomicfoundation/hardhat-toolbox";
-import "@fluentxyz/hardhat-compile-to-wasm";
+import "@fluent.xyz/hardhat-plugin";
 import "./tasks/create_puzzles";
 import "./tasks/fund_player";
 import "./tasks/unsolved_puzzles";
@@ -40,12 +40,6 @@ const config: HardhatUserConfig = {
       default: 0,
     },
   },
-  compileToWasmConfig: [
-    {
-      contractDir: "./contracts/checkmate-validator",
-      interfacePath: "./contracts/ICheckmateValidator.sol",
-    },
-  ],
 };
 
 export default config;

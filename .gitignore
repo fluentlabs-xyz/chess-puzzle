@@ -24,3 +24,4 @@ ignition/deployments/chain-31337
 target
 
 .DS_Store
+.local-node

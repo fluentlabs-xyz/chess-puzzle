@@ -4,6 +4,7 @@ import fs from "fs";
 import path from "path";
 import crypto from "crypto";
 import { ethers } from "ethers";
+import { artifacts } from "hardhat";
 require("dotenv").config();
 
 const DEPLOYER_PRIVATE_KEY =
@@ -14,8 +15,6 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const { deployments, getNamedAccounts, ethers, config, network } = hre;
   const { deploy, save, getOrNull } = deployments;
   const { deployer: deployerAddress } = await getNamedAccounts();
-
-  console.log("deployerAddress", deployerAddress);
 
   // ---------------------
   // Deploy FluentEloToken contract
@@ -33,6 +32,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   console.log("Deploying WASM contract...");
   const wasmBinaryPath = "./contracts/checkmate-validator/lib.wasm"; // TODO: Update this path to your actual wasm file
   // @ts-ignore
+
   const provider = new ethers.JsonRpcProvider(network.config.url);
 
   // Create a new wallet instance to deploy the contract,
@@ -40,8 +40,13 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   // which is not applicable in our case.
   const deployer = new ethers.Wallet(DEPLOYER_PRIVATE_KEY, provider);
 
+  let checkmateValidatorArtifacts = await hre.artifacts.readArtifact(
+    "CheckmateValidator"
+  );
+
   const checkmateValidatorAddress = await deployWasmContract(
-    wasmBinaryPath,
+    "CheckmateValidator",
+    checkmateValidatorArtifacts.bytecode,
     deployer,
     provider,
     getOrNull,
@@ -60,30 +65,27 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 };
 
 async function deployWasmContract(
-  wasmBinaryPath: string,
+  artifactName: string,
+  wasm: string,
   deployer: ethers.Wallet,
   provider: ethers.JsonRpcProvider,
   getOrNull: any,
   save: any
 ) {
-  const wasmBinary = fs.readFileSync(wasmBinaryPath);
-  const wasmBinaryHash = crypto
-    .createHash("sha256")
-    .update(wasmBinary)
-    .digest("hex");
-  const artifactName = path.basename(wasmBinaryPath, ".wasm");
-  const existingDeployment = await getOrNull(artifactName);
+  const wasmBinaryHash = crypto.createHash("sha256").update(wasm).digest("hex");
+  // const artifactName = path.basename(wasmBinaryPath, ".wasm");
+  // const existingDeployment = await getOrNull(artifactName);
 
-  if (existingDeployment && existingDeployment.metadata === wasmBinaryHash) {
-    console.log(`WASM contract bytecode has not changed. Skipping deployment.`);
-    console.log(`Existing contract address: ${existingDeployment.address}`);
-    return existingDeployment.address;
-  }
+  // if (existingDeployment && existingDeployment.metadata === wasmBinaryHash) {
+  //   console.log(`WASM contract bytecode has not changed. Skipping deployment.`);
+  //   console.log(`Existing contract address: ${existingDeployment.address}`);
+  //   return existingDeployment.address;
+  // }
 
   const gasPrice = (await provider.getFeeData()).gasPrice;
 
   const transaction = {
-    data: "0x" + wasmBinary.toString("hex"),
+    data: wasm,
     gasLimit: 300_000_000,
     gasPrice: gasPrice,
   };
@@ -96,8 +98,8 @@ async function deployWasmContract(
 
     const artifact = {
       abi: [], // Since there's no ABI for the WASM contract
-      bytecode: "0x" + wasmBinary.toString("hex"),
-      deployedBytecode: "0x" + wasmBinary.toString("hex"),
+      bytecode: wasm,
+      deployedBytecode: wasm,
       metadata: wasmBinaryHash,
     };
 
@@ -115,4 +117,3 @@ async function deployWasmContract(
 }
 
 export default func;
-
