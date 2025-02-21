@@ -1,10 +1,7 @@
 import { HardhatRuntimeEnvironment } from "hardhat/types";
 import { DeployFunction } from "hardhat-deploy/types";
-import fs from "fs";
-import path from "path";
 import crypto from "crypto";
 import { ethers } from "ethers";
-import { artifacts } from "hardhat";
 require("dotenv").config();
 
 const DEPLOYER_PRIVATE_KEY =
@@ -91,7 +88,7 @@ async function deployWasmContract(
   };
 
   const tx = await deployer.sendTransaction(transaction);
-  const receipt = await tx.wait();
+  const receipt = await tx.wait(1);
 
   if (receipt && receipt.contractAddress) {
     console.log(`WASM contract deployed at: ${receipt.contractAddress}`);

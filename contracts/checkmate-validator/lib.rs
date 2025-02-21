@@ -9,79 +9,61 @@ use fluentbase_sdk::{
 use shakmaty::{fen::Fen, san::San, CastlingMode, Chess, FromSetup, Position, Setup};
 
 #[derive(Contract)]
-pub struct CHESS<SDK> {
+pub struct App<SDK> {
     sdk: SDK,
 }
 
-pub trait ChessAPI {
-    fn is_checkmate(&self, board: String, mv: String) -> bool;
-    fn is_board_valid(&self, board: String) -> bool;
-}
-
 #[router(mode = "solidity")]
-impl<SDK: SharedAPI> ChessAPI for CHESS<SDK> {
+impl<SDK: SharedAPI> App<SDK> {
     #[function_id("isCheckmate(string,string)")]
-    fn is_checkmate(&self, board: String, mv: String) -> bool {
-        // Parse the FEN string to a Fen object
-        let fen = match Fen::from_ascii(board.as_bytes()) {
-            Ok(fen) => fen,
-            Err(_) => return false,
+    pub fn is_checkmate(&self, board: String, mv: String) -> bool {
+        // parse the FEN string to a Fen object
+        let Ok(fen) = Fen::from_ascii(board.as_bytes()) else {
+            return false;
         };
-
-        // Convert the Fen object to a Setup object
+        // convert the Fen object to a Setup object
         let setup = Setup::from(fen);
-
-        // Convert the Setup object to a Chess object
-        let pos = match Chess::from_setup(setup, CastlingMode::Standard) {
-            Ok(pos) => pos,
-            Err(_) => return false,
+        // convert the Setup object to a Chess object
+        let Ok(pos) = Chess::from_setup(setup, CastlingMode::Standard) else {
+            return false;
         };
-        // Parse the move string to a San object
-        let san = match mv.parse::<San>() {
-            Ok(san) => san,
-            Err(_) => return false,
+        // parse the move string to a San object
+        let Ok(san) = mv.parse::<San>() else {
+            return false;
         };
-
-        // Convert the San object to a Move object
-        let mv = match san.to_move(&pos) {
-            Ok(mv) => mv,
-            Err(_) => return false,
+        // convert the San object to a Move object
+        let Ok(mv) = san.to_move(&pos) else {
+            return false;
         };
-
-        // Try to play the move on the chess board and get new position
-        let new_pos = match pos.play(&mv) {
-            Ok(pos) => pos,
-            Err(_) => return false,
+        // try to play the move on the chess board and get new position
+        let Ok(new_pos) = pos.play(&mv) else {
+            return false;
         };
-
-        // Check if the new position is a checkmate
+        // check if the new position is a checkmate
         new_pos.is_checkmate()
     }
 
     #[function_id("isBoardValid(string)")]
-    fn is_board_valid(&self, board: String) -> bool {
-        // Parse the FEN string to a Fen object
-        let fen = match Fen::from_ascii(board.as_bytes()) {
-            Ok(fen) => fen,
-            Err(_) => return false,
+    pub fn is_board_valid(&self, board: String) -> bool {
+        // parse the FEN string to a Fen object
+        let Ok(fen) = Fen::from_ascii(board.as_bytes()) else {
+            return false;
         };
-
-        // Convert the Fen object to a Setup object
+        // convert the Fen object to a Setup object
         let setup = Setup::from(fen);
-
-        // Check if the board is valid
-        match Chess::from_setup(setup, CastlingMode::Standard) {
-            Ok(_) => return true,
-            Err(_) => return false,
+        // check if the board is valid
+        let Ok(_) = Chess::from_setup(setup, CastlingMode::Standard) else {
+            return false;
         };
+        true
     }
 }
 
-impl<SDK: SharedAPI> CHESS<SDK> {
-    fn deploy(&self) {}
+impl<SDK: SharedAPI> App<SDK> {
+    pub fn deploy(&self) {}
 }
 
-basic_entrypoint!(CHESS);
+basic_entrypoint!(App);
 
 #[cfg(test)]
 mod tests {
@@ -97,21 +79,15 @@ mod tests {
     fn test_input_output() {
         let board = "rnbq1k1r/1p1p3p/5npb/2pQ1p2/p1B1P2P/8/PPP2PP1/RNB1K1NR w KQ - 2 11";
         let mv = "Qf7";
-
         let fluent_input = IsCheckmateCall::new((board.to_string(), mv.to_string())).encode();
-
         let sol_input = isCheckmateCall {
             board: board.to_string(),
             mv: mv.to_string(),
         }
         .abi_encode();
-
         assert_eq!(fluent_input.to_vec(), sol_input);
-
         let fluent_output = IsCheckmateReturn((true,)).encode();
-
         let sol_output = <(alloy_sol_types::sol_data::Bool,) as SolType>::abi_encode(&(true,));
-
         assert_eq!(fluent_output.to_vec(), sol_output);
     }
 
@@ -122,20 +98,14 @@ mod tests {
             "e2e4".to_string(),
         ))
         .encode();
-
         println!("Input: {:?}", hex::encode(&input));
-
         let sdk = TestingContext::empty().with_input(input);
-
-        let mut chess = CHESS::new(JournalState::empty(sdk.clone()));
-
+        let mut chess = App::new(JournalState::empty(sdk.clone()));
         chess.deploy();
         chess.main();
-
         let encoded_output = &sdk.take_output();
         println!("encoded output: {:?}", hex::encode(&encoded_output));
         let result = IsCheckmateReturn::decode(&encoded_output.as_slice()).unwrap();
-
         assert_eq!(result.0 .0, false);
     }
 
@@ -146,19 +116,14 @@ mod tests {
             "Qf7".to_string(),
         ))
         .encode();
-
         println!("Input: {:?}", hex::encode(&input));
-
         let sdk = TestingContext::empty().with_input(input);
-        let mut chess = CHESS::new(JournalState::empty(sdk.clone()));
-
+        let mut chess = App::new(JournalState::empty(sdk.clone()));
         chess.deploy();
         chess.main();
-
         let encoded_output = &sdk.take_output();
         println!("encoded output: {:?}", hex::encode(&encoded_output));
         let result = IsCheckmateReturn::decode(&encoded_output.as_slice()).unwrap();
-
         assert_eq!(result.0 .0, true);
     }
 
@@ -168,19 +133,14 @@ mod tests {
             "rrrq1k1r/1p1p3p/5npb/2pQ1p2/p1B1P2P/8/PPP2PP1/RNB1K1NR w KQ - 2 11".to_string(),
         ))
         .encode();
-
         println!("Input: {:?}", hex::encode(&input));
-
         let sdk = TestingContext::empty().with_input(input);
-        let mut chess = CHESS::new(JournalState::empty(sdk.clone()));
-
+        let mut chess = App::new(JournalState::empty(sdk.clone()));
         chess.deploy();
         chess.main();
-
         let encoded_output = &sdk.take_output();
         println!("encoded output: {:?}", hex::encode(&encoded_output));
         let result = IsBoardValidReturn::decode(&encoded_output.as_slice()).unwrap();
-
         assert_eq!(result.0 .0, false);
     }
 
@@ -190,19 +150,14 @@ mod tests {
             "rnbq1k1r/1p1p3p/5npb/2pQ1p2/p1B1P2P/8/PPP2PP1/RNB1K1NR w KQ - 2 11".to_string(),
         ))
         .encode();
-
         println!("Input: {:?}", hex::encode(&input));
-
         let sdk = TestingContext::empty().with_input(input);
-        let mut chess = CHESS::new(JournalState::empty(sdk.clone()));
-
+        let mut chess = App::new(JournalState::empty(sdk.clone()));
         chess.deploy();
         chess.main();
-
         let encoded_output = &sdk.take_output();
         println!("encoded output: {:?}", hex::encode(&encoded_output));
         let result = IsBoardValidReturn::decode(&encoded_output.as_slice()).unwrap();
-
         assert_eq!(result.0 .0, true);
     }
 }

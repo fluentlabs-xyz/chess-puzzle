@@ -25,3 +25,4 @@ target
 
 .DS_Store
 .local-node
+.env
