@@ -2,6 +2,11 @@
 
 This is a simple chess puzzle game designed to demonstrate interoperability between Solidity and Rust, brought to life by the awesome Fluent project. The goal is to solve the puzzle in one move.
 
+## CA
+
+puzzle - 0x8672fE96b83257D3ae2a816B11aDE2aC7d28bE0A
+validator - 0x799A7b7601BC355A16E6b97AAbA51e263a9bbDa8
+
 Project Structure
 The project consists of two main parts:
 

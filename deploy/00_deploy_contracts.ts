@@ -83,7 +83,7 @@ async function deployWasmContract(
 
   const transaction = {
     data: wasm,
-    gasLimit: 300_000_000,
+    gasLimit: 30_000_000,
     gasPrice: gasPrice,
   };
 
